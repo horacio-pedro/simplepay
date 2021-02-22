@@ -8,7 +8,7 @@ defmodule SimplepayWeb.Router do
   scope "/api", SimplepayWeb do
     pipe_through :api
 
-    get "/", WelcomeController, :index
+    get "/:filename", WelcomeController, :index
   end
 
   # Enables LiveDashboard only for development
