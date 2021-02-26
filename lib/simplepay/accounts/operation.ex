@@ -1,12 +1,16 @@
 defmodule Simplepay.Accounts.Operation do
   alias Ecto.Multi
-  alias Simplepay.{Account, Repo}
+  alias Simplepay.Account
 
   def call(%{"id" => id, "value" => value}, operation) do
-   Multi.new()
-   |> Multi.run(:account, fn repo, _changes -> get_account(repo, id) end)
-   |> Multi.run(:update_balance, fn repo, %{account: account} ->
-      update_balance(repo, account, value, operation) end)
+    operation_name = account_operation_name(operation)
+
+    Multi.new()
+    |> Multi.run(operation_name, fn repo, _changes -> get_account(repo, id) end)
+    |> Multi.run(operation, fn repo, changes ->
+      account = Map.get(changes, operation_name)
+      update_balance(repo, account, value, operation)
+    end)
   end
 
   defp get_account(repo, id) do
@@ -42,10 +46,14 @@ defmodule Simplepay.Accounts.Operation do
     |> repo.update()
   end
 
-  defp run_transaction(multi) do
-    case Repo.transaction(multi) do
-      {:error, _operation, reason, _change} -> {:error, reason}
-      {:ok, %{update_balance: account}} -> {:ok, account}
-    end
+  # defp run_transaction(multi) do
+  #   case Repo.transaction(multi) do
+  #     {:error, _operation, reason, _change} -> {:error, reason}
+  #     {:ok, %{update_balance: account}} -> {:ok, account}
+  #   end
+  # end
+
+  defp account_operation_name(operation) do
+    "account_#{Atom.to_string(operation)}" |> String.to_atom()
   end
 end
